@@ -1,0 +1,37 @@
+1. Condition Variables:
+    a. A condition variable is always associated with a lock. If lock is not provided then a default RLock will be 
+       added to the same. Most of our use case, we should provide Lock as multiple different threads in which
+       we need to sync the access should share the same lock.
+    b. Initialization cv = Condition(lock)
+    c. Standard use:
+        with cv: # This will acquire underlying lock (check __enter__ and __exit__ method for more clarity in documentation.)
+            while condition met:
+                cv.wait() # Wait until condition becomes false, this will release the lock.
+            
+            # Perform the operation on shared lock, you want to Perform
+            shared_data.update(new_value)
+
+            # You can also notify some other condition variale if they waiting for this change.
+            cv2.notify()
+    d. Methods:
+            i. wait(timeout=None) # If timeout defined then thread will try to acquire lock and check condition again.
+           ii. notify(n=1) # notify only one waiting thread
+          iii. notify_all() # Notifies all waiting thread
+
+2. Semaphores:
+    a. Semaphores are Locks (Mutex) that manages accessing of shared variable but instead of only 1 thread in case of Mutex,
+       in this you can define max number of threads that can access shared data at a time. For e.g. only allowing n threads
+       to access db connection at a time.
+
+    b. Initialization: Semaphore(value=max_threads)
+        i. By default value = 1 i.e. Semaphore act as Binary Semaphore (same as Mutex)
+    
+    c. Semaphores internally maintain counter, which decrements on acquire and on release it is incremented.
+        i. If counter = 0, then new acquire request is added to waiting queue which is awaken once some another thread 
+           releases the same.
+    d. Methods:
+        i. acquire()
+       ii. release()
+
+    
+      
