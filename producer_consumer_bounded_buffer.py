@@ -16,11 +16,62 @@ Solution:
     5. Both is_empty and is_full condition variable will be associated with the same lock as
        both consumers and producers trying to access same buffer.
 
-Queries: Check concept what happens if I try acquire lock directly instead of cv, what all extra handling
-  I will have to do ?
+Queries: 
+    1. Check concept what happens if I try acquire lock directly instead of cv, what all extra handling
+       I will have to do ?
 
-  : How can I add timeout when there is rate imbalance in producer consumer production and consumption
-    rate.
+       Solution: 
+        - is_full internally is associated with self.buffer_lock (check code below using the same variables as mentioned below.)
+        - If we do, [with is_full:], this basically acquires buffer_lock and when we come out of the context manager we release the 
+          same buffer_lock. Check __enter__ and __exit__ defined in condition varaible definition, you will see they are internally 
+          calling self.lock.__enter__() and self.lock.__exit__()
+        
+        - So basically, instead of with.is_full if I write with.buffer_lock, then that will work absolutely fine. But you should
+          ensure you are using same lock which is associated with the condition variable.
+        
+        - Now, what will happen with below code:
+            with self.buffer_lock:
+                while len(self.buffer) == self.max_capacity:
+                    print("Waiting as buffer full")
+                    self.is_full.wait() --> This will release the lock.
+
+            - Always think it as a thread T1, first acquired the lock using [with.buffer_lock] and then same thread checked for
+              condition, if it has to wait, then same thread released the lock.
+        
+        - Conclusion: This will work absolutely fine, but you need to be careful you are using same lock. That is the reason 
+                      its better to use with.is_full (No need to worry about locks)
+
+        - Original code from BoundedBuffer class created below.
+
+            def produce(self, item, producer_id):
+                with self.is_full:
+                    while len(self.buffer) == self.max_capacity:
+                        print("Waiting as buffer full.")
+                        self.is_full.wait()
+                    
+                    print(f"Producer with id: {producer_id} adding element in buffer")
+                    self.buffer.append(item)
+                    self.is_empty.notify()
+
+    2. How can I add timeout when there is rate imbalance in producer consumer production and consumption
+       rate.
+
+       Solution: Lets say if there is no more consumer and you want producer to only wait for 5 seconds, 
+                 if buffer still full i.e. no more consumer available, then return error.
+
+                 Unable to produce as buffer full. Retry again.
+                
+                 def produce(self, item, producer_id):
+                    with self.is_full:
+                        start_time = time.time()
+                        while len(buffer) == self.MAX_CAPACITY:
+                            remaining_time = 5 - (time.time()-start_time)
+                            if remaining_time == 0:
+                                raise Exception("Unable to add item in buffer as buffer is full from last 5 seconds")
+                            self.is_full.wait(timeout=remaining_time)
+                        
+                        buffer.append(item)
+                        self.is_empty.notify()
 """
 from threading import Condition, Lock, Thread, get_ident
 import time
@@ -35,9 +86,15 @@ class BoundedBuffer:
     
     def produce(self, item, producer_id):
         with self.is_full:
+            start_time = time.time()
             while len(self.buffer) == self.max_capacity:
+                # Only wait until remaining_time is non_zero
+                remaining_time = 5 - (time.time()-start_time)
+                if remaining_time <= 0:
+                    raise Exception("Unable to add item in buffer as buffer is full from last 5 seconds")
+                
                 print("Waiting as buffer full.")
-                self.is_full.wait()
+                self.is_full.wait(timeout=remaining_time)
             
             print(f"Producer with id: {producer_id} adding element in buffer")
             self.buffer.append(item)
