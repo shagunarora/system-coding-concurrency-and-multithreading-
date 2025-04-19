@@ -1,5 +1,5 @@
 """
-Context:
+Context:   
 You're simulating a scientific experiment with 4 worker threads. The experiment runs in 3 phases, and in each phase:
     - All 4 workers must do some processing.
     - Once all workers finish the phase, they must synchronize at a barrier.
