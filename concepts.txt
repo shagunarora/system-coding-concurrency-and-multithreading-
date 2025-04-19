@@ -33,5 +33,29 @@
         i. acquire()
        ii. release()
 
+3. Events:
+    a. This is one of the simplest mechanisms for communication between threads: one thread signals an event 
+       and other threads wait for it.
+    b. Class implementing event objects. An event manages a flag that can be set to true with the set() method 
+       and reset to false with the clear() method. The wait() method blocks until the flag is true. The flag is 
+       initially false.
+    c. Methods:
+        i. is_set()
+       ii. set()
+      iii. clear()
+       iv. wait(timeout=None)
 
-      
+4. Barrier
+    a. A barrier lets a fixed number of threads wait for each other to reach a certain point (called a barrier point)
+       before any of them proceed.
+    b. Real world analogy:
+        i. Imagine 5 runners at a checkpoint. None of them can continue the race until all 5 arrive. Once everyone reaches, 
+           the gate opens and they all move ahead.
+    c. threading.Barrier(n): Wait for n threads to reach barrier point.
+    d. Methods:
+        i. wait(): Called by each thread when it reaches the barrier. Blocks until all n threads have called .wait()
+       ii. reset(): Resets the barrier to its initial state.
+      iii. abort():	Forces the barrier into broken state
+       iv. broken(): Property that returns True if the barrier is in a broken state
+        v. parties(): Number of threads the barrier is expecting
+       vi. n_waiting():	Number of threads currently waiting at the barrier 
