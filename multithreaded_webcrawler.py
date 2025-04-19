@@ -33,6 +33,10 @@ Approach:
         - htmlParser (Access to parser object that returns urls inside startUrl)
         + crawl():
             - Access unvisited_url and visit with this thread.
+
+Note:
+    - Below doesn't check if url already visited -- need to improve check v2.
+    - Also, only parse same domain name urls (This check is also not implemented.)
 """
 import threading
 import time
