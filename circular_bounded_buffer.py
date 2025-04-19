@@ -41,17 +41,16 @@ class CircularBoundedBuffer:
     def __init__(self, capacity):
         self.size = capacity
         self.buffer = [None]*capacity
-        self.lock = threading.Lock()
+        self.lock = threading.Lock() 
         self.consumer_index = 0
         self.producer_index = 0
         self.space_available = threading.Condition(self.lock)
         self.content_available = threading.Condition(self.lock)
     
     def produce(self, id):
-
         # For DEMO a producer will produce 5 times. (It could be a stream also in reality)
         for value in range(5):
-            with self.space_available:
+            with self.space_available: # p1 --> lock, p2 --> waiting
                 while self.buffer[self.producer_index] != None:
                     self.space_available.wait()
                 
@@ -60,7 +59,6 @@ class CircularBoundedBuffer:
                 self.buffer[self.producer_index] = value
                 self.content_available.notify_all()
 
-                # Check if next index free
                 self.producer_index = (self.producer_index + 1)%self.size
             
     def consume(self, id):
@@ -68,7 +66,7 @@ class CircularBoundedBuffer:
         Wait for 5 seconds for new content, if no new content then return.
         """
         while True:
-            with self.content_available:
+            with self.content_available: # c1 --> inside, c2 --> wait, __enter__, __exit__
                 start_time = time.time()
                 while self.buffer[self.consumer_index] == None:
                     remaining_time = 5 - (time.time() - start_time)
